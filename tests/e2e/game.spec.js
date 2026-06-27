@@ -9,6 +9,16 @@ async function dialValue(page, stat) {
   return Number(text);
 }
 
+// In months with no scripted beat, a pooled random event now opens the turn. For
+// cabinet-phase tests we resolve whatever event leads, then proceed to the cabinet.
+async function clearLeadingEvent(page) {
+  const modal = page.getByTestId('event-modal');
+  if (await modal.count()) {
+    await page.getByTestId('choice-0').click();
+    await expect(modal).toHaveCount(0);
+  }
+}
+
 test('1. cold load renders March 1861 with dials visible and security hidden', async ({ page }) => {
   await page.goto('./');
   await expect(page.getByTestId('month')).toHaveText('March 1861');
@@ -21,7 +31,8 @@ test('1. cold load renders March 1861 with dials visible and security hidden', a
 });
 
 test('2. a cabinet decision moves the relevant dial', async ({ page }) => {
-  await page.goto('./?seed=cabinet_map'); // Aug 1861, no blocking event
+  await page.goto('./?seed=cabinet_map'); // Aug 1861
+  await clearLeadingEvent(page);
   const before = await dialValue(page, 'treasury');
   await page.getByTestId('portrait-chase').click();
   await expect(page.getByTestId('decision-modal')).toBeVisible();
@@ -41,6 +52,7 @@ test('3. End Turn advances the month and fires the monthly event', async ({ page
 
 test('4. a region choice changes the map tier and is attributed in the info panel', async ({ page }) => {
   await page.goto('./?seed=cabinet_map'); // Maryland parked at +30 (contested)
+  await clearLeadingEvent(page);
   await expect(page.getByTestId('region-maryland')).toHaveAttribute('data-band', 'contested');
   await page.getByTestId('portrait-blair').click();
   await page.getByTestId('choice-1').click(); // "secure the rail lines" -> Maryland +18
@@ -72,9 +84,22 @@ test('6. state persists across a reload', async ({ page }) => {
   await expect(page.getByTestId('event-modal')).toHaveCount(0);
 });
 
-test('7a. the 1864 election checkpoint can end the presidency', async ({ page }) => {
-  await page.goto('./?seed=election_1864');
+test('7a. the 1864 election checkpoint can end the presidency (loss)', async ({ page }) => {
+  await page.goto('./?seed=election_1864_lose');
+  // Election Day lead-in fires first, then the checkpoint resolves on resolution.
+  await expect(page.getByTestId('event-modal')).toHaveAttribute('data-entry', 'election_day_1864');
+  await page.getByTestId('choice-0').click();
   await expect(page.getByTestId('epilogue')).toHaveAttribute('data-kind', 'curtailed');
+});
+
+test('7a-win. a strong 1864 record wins a second term (no epilogue)', async ({ page }) => {
+  await page.goto('./?seed=election_1864_win');
+  await expect(page.getByTestId('event-modal')).toHaveAttribute('data-entry', 'election_day_1864');
+  await page.getByTestId('choice-0').click();
+  // Survived the checkpoint: the game continues into the second term.
+  await expect(page.getByTestId('epilogue')).toHaveCount(0);
+  await expect(page.getByTestId('month')).toHaveText('November 1864');
+  await expect(page.getByTestId('dial-unionMorale')).toBeVisible();
 });
 
 test('7b. a catastrophic loss can fire', async ({ page }) => {
@@ -94,4 +119,12 @@ test('8. the preliminary Emancipation Proclamation fires from the seeded fixture
     'data-entry',
     'preliminary_emancipation_1862'
   );
+});
+
+test('9. the Fall of Atlanta fires at Sept 1864 and its morale swing lands', async ({ page }) => {
+  await page.goto('./?seed=atlanta_1864');
+  await expect(page.getByTestId('event-modal')).toHaveAttribute('data-entry', 'atlanta_1864');
+  const before = await dialValue(page, 'unionMorale');
+  await page.getByTestId('choice-0').click(); // proclaim thanksgiving: morale +18
+  expect(await dialValue(page, 'unionMorale')).toBeGreaterThan(before);
 });
