@@ -9,6 +9,7 @@
 // Forced follow-ups (state.requiredDecisions) bypass trigger checks entirely.
 
 import { currentMonthString, currentMonthIndex } from './state.js';
+import { weightedPick, shuffleInPlace } from './rng.js';
 
 function readTarget(state, target) {
   const [kind, name] = target.split(':');
@@ -62,19 +63,71 @@ export function qualifies(entry, state) {
   return conds.every((c) => evaluateCondition(state, c));
 }
 
-// All cabinet/mary decisions available this month (advisor !== 'event'),
-// including any forced follow-ups that are due now.
+// An entry is "random" only if it opts in; everything else is scripted (default).
+export function isRandom(entry) {
+  return entry.kind === 'random';
+}
+
+// Scripted (non-random) cabinet/mary decisions eligible this month. These are
+// deterministic and always offered (historical beats never get crowded out).
+function eligibleScriptedDecisions(content, state) {
+  const out = [];
+  for (const entry of content) {
+    if (entry.advisor === 'event' || isRandom(entry)) continue;
+    if (state.resolvedThisMonth.includes(entry.id)) continue;
+    if (qualifies(entry, state)) out.push(entry);
+  }
+  return out;
+}
+
+// Pick the occasional random advisor situations for the month, drawing from the
+// seeded PRNG. Runs ONCE at month entry (the result is frozen into state) so the
+// cabinet doesn't re-roll on every render. Respects an active-advisor cap (target
+// 1–3): scripted-active advisors fill the cap first; remaining capacity is offered,
+// occasionally, to advisors who have an eligible random situation but no scripted one.
+export function selectRandomAdvisorSituations(content, state, rand, cap = 3, surfaceChance = 0.5) {
+  const scriptedAdvisors = new Set(eligibleScriptedDecisions(content, state).map((d) => d.advisor));
+  let capacity = cap - scriptedAdvisors.size;
+  if (capacity <= 0) return [];
+
+  // Group eligible random advisor situations by advisor, skipping advisors who already
+  // have a scripted decision this month.
+  const byAdvisor = new Map();
+  for (const entry of content) {
+    if (entry.advisor === 'event' || !isRandom(entry)) continue;
+    if (scriptedAdvisors.has(entry.advisor)) continue;
+    if (state.resolvedThisMonth.includes(entry.id)) continue;
+    if (!qualifies(entry, state)) continue;
+    if (!byAdvisor.has(entry.advisor)) byAdvisor.set(entry.advisor, []);
+    byAdvisor.get(entry.advisor).push(entry);
+  }
+
+  const advisors = shuffleInPlace([...byAdvisor.keys()], rand);
+  const chosen = [];
+  for (const advisor of advisors) {
+    if (capacity <= 0) break;
+    if (rand() >= surfaceChance) continue; // occasional, not guaranteed
+    const pick = weightedPick(byAdvisor.get(advisor), rand);
+    if (pick) {
+      chosen.push(pick.id);
+      capacity -= 1;
+    }
+  }
+  return chosen;
+}
+
+// All cabinet/mary decisions to offer this month: scripted-eligible (live) + forced
+// follow-ups + the random situations frozen at month entry (state.monthRandomAdvisorIds).
 export function getAvailableDecisions(content, state) {
   const out = [];
-  const seen = new Set();
+  const randomIds = new Set(state.monthRandomAdvisorIds || []);
   for (const entry of content) {
     if (entry.advisor === 'event') continue;
     if (state.resolvedThisMonth.includes(entry.id)) continue;
     const forced = state.requiredDecisions.includes(entry.id);
-    if (forced || qualifies(entry, state)) {
-      out.push(entry);
-      seen.add(entry.id);
-    }
+    const scripted = !isRandom(entry) && qualifies(entry, state);
+    const random = randomIds.has(entry.id);
+    if (forced || scripted || random) out.push(entry);
   }
   // A forced follow-up might not exist in content (defensive) — ignore silently.
   return out;
@@ -87,15 +140,23 @@ export function getActiveAdvisors(content, state) {
   return ids;
 }
 
-// The single monthly event: highest-priority qualifying advisor:'event' entry
-// that hasn't already fired this month.
-export function selectMonthlyEvent(content, state) {
-  let best = null;
+// The single monthly event. Scripted precedence: if any scripted advisor:'event'
+// entry is eligible, fire the highest-priority one (historical beats always win their
+// month). Otherwise weighted-random-draw from eligible random events. `rand` is a
+// () => [0,1) draw from the seeded PRNG.
+export function selectMonthlyEvent(content, state, rand = Math.random) {
+  let bestScripted = null;
+  const eligibleRandom = [];
   for (const entry of content) {
     if (entry.advisor !== 'event') continue;
     if (state.resolvedThisMonth.includes(entry.id)) continue;
     if (!qualifies(entry, state)) continue;
-    if (best === null || (entry.priority || 0) > (best.priority || 0)) best = entry;
+    if (isRandom(entry)) {
+      eligibleRandom.push(entry);
+    } else if (bestScripted === null || (entry.priority || 0) > (bestScripted.priority || 0)) {
+      bestScripted = entry;
+    }
   }
-  return best;
+  if (bestScripted) return bestScripted;
+  return weightedPick(eligibleRandom, rand);
 }

@@ -24,6 +24,7 @@
 // }
 
 import { createRegions } from '../content/regions.js';
+import { randomSeed } from './rng.js';
 
 export const STAT_KEYS = [
   'unionMorale',
@@ -48,7 +49,7 @@ export const STAT_META = {
   security: { label: 'Security', hint: 'Personal safety. Hidden until the threat is revealed.' },
 };
 
-export function createInitialState() {
+export function createInitialState(seed = randomSeed()) {
   return {
     current: { year: 1861, month: 3 },
     stats: {
@@ -67,6 +68,12 @@ export function createInitialState() {
     usedDecisions: {},
     requiredDecisions: [],
     resolvedThisMonth: [],
+    // Random advisor situations surfaced for the current month, chosen once at month
+    // entry from the seeded PRNG (frozen so re-renders don't re-roll). Ids into content.
+    monthRandomAdvisorIds: [],
+    // Seeded PRNG state (one 32-bit int) — saved/loaded so a playthrough's random
+    // selection is reproducible. See engine/rng.js.
+    rngSeed: seed >>> 0 || 1,
     phase: 'cabinet',
     activeDecisionId: null,
     activeEventId: null,
