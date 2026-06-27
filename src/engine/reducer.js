@@ -19,6 +19,7 @@ import { createInitialState, currentMonthIndex, monthString } from './state.js';
 import { applyEffects } from './effects.js';
 import { selectMonthlyEvent } from './triggers.js';
 import { evaluateEndgame } from './endgame.js';
+import { FLAG_ACTIVATIONS } from '../content/regions.js';
 
 function clone(state) {
   return structuredClone(state);
@@ -30,19 +31,23 @@ function findEntry(content, id) {
 
 // Resolve structural region changes that flags imply but the effect schema can't
 // express directly (e.g. West Virginia splitting from Virginia in 1863). Keeps the
-// rendered SVG geometry fixed; only flips `active` and seeds control once.
+// rendered SVG geometry fixed; only flips `active` and seeds control once. Driven
+// entirely by the FLAG_ACTIVATIONS data table — no per-region special cases — so a
+// new statehood/territory beat is a data row in regions.js, not engine code.
 function reconcileStructural(state) {
-  const wv = state.regions.west_virginia;
-  if (state.flags.west_virginia_active && wv && !wv.active) {
-    wv.active = true;
-    const before = wv.control;
-    wv.control = 40;
+  for (const [flag, rule] of Object.entries(FLAG_ACTIVATIONS)) {
+    if (!state.flags[flag]) continue;
+    const region = state.regions[rule.region];
+    if (!region || region.active) continue;
+    region.active = true;
+    const before = region.control;
+    region.control = rule.control;
     state.changeLog.push({
       month: monthString(state.current.year, state.current.month),
-      target: 'region:west_virginia',
-      delta: wv.control - before,
-      cause: 'structural_west_virginia',
-      reason: 'West Virginia split from Virginia and joined the Union',
+      target: `region:${rule.region}`,
+      delta: region.control - before,
+      cause: `structural_${flag}`,
+      reason: rule.reason,
     });
   }
 }
@@ -115,6 +120,26 @@ export function gameReducer(state, action, content = []) {
       const s = clone(action.state);
       if (!s.pendingFollowUps) s.pendingFollowUps = [];
       return s;
+    }
+
+    // Dev/test only (see src/debug/): jump to an arbitrary state by applying a
+    // generic patch to a fresh game, then entering that month so the right event
+    // (or endgame) surfaces. The patch is plain data — no content-specific logic.
+    case 'SEED_GAME': {
+      const s = createInitialState();
+      s.pendingFollowUps = [];
+      const p = action.patch || {};
+      if (p.current) s.current = { ...s.current, ...p.current };
+      if (p.stats) Object.assign(s.stats, p.stats);
+      if (p.flags) for (const f of p.flags) s.flags[f] = true;
+      if (p.regions) {
+        for (const [id, control] of Object.entries(p.regions)) {
+          if (s.regions[id]) s.regions[id].control = control;
+        }
+      }
+      if (p.secondTermStart != null) s.secondTermStart = p.secondTermStart;
+      reconcileStructural(s);
+      return enterMonth(s, content, action.rng);
     }
 
     case 'OPEN_DECISION': {

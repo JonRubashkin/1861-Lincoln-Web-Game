@@ -8,7 +8,7 @@
 //
 // Forced follow-ups (state.requiredDecisions) bypass trigger checks entirely.
 
-import { monthIndex, currentMonthString, currentMonthIndex } from './state.js';
+import { currentMonthString, currentMonthIndex } from './state.js';
 
 function readTarget(state, target) {
   const [kind, name] = target.split(':');
