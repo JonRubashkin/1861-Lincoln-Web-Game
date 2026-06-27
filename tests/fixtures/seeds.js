@@ -24,6 +24,7 @@ export const SEEDS = {
     current: { year: 1861, month: 8 },
     flags: ['war_begun'],
     regions: { maryland: 30 },
+    rngSeed: 7,
   },
 
   // batch-2 note 3: pre-set the two gating flags at Sept 1862 so the Preliminary
@@ -33,12 +34,29 @@ export const SEEDS = {
     flags: ['emancipation_drafted', 'antietam_victory', 'war_begun', 'security_unlocked'],
   },
 
-  // 1864 election checkpoint, tuned below threshold -> curtailed first-term epilogue
-  // on load. Stats are kept clear of the threshold-event triggers so the endgame,
-  // not a state-triggered event, is what fires.
-  election_1864: {
+  // Sept 1864: the Fall of Atlanta scripted beat fires on load. rngSeed is pinned so
+  // any incidental random advisor situations are reproducible.
+  atlanta_1864: {
+    current: { year: 1864, month: 9 },
+    flags: ['war_begun'],
+    rngSeed: 1864,
+  },
+
+  // 1864 election: the Election-Day lead-in event fires first; resolving it hands off
+  // to the endgame checkpoint. LOSE seed is tuned below threshold (curtailed epilogue);
+  // WIN seed is above it (second term begins, no epilogue). Stats are kept clear of the
+  // threshold-event triggers so only the named beats fire.
+  election_1864_lose: {
     current: { year: 1864, month: 11 },
     stats: { unionMorale: 30, warEffort: 10, congressionalRelations: 10, treasury: 40 },
+    rngSeed: 1864,
+  },
+
+  election_1864_win: {
+    current: { year: 1864, month: 11 },
+    stats: { unionMorale: 75, warEffort: 65, congressionalRelations: 60, treasury: 55 },
+    flags: ['atlanta_fallen', 'soldier_vote_enabled', 'war_begun'],
+    rngSeed: 1864,
   },
 
   // Deep in the second term with the President badly exposed; the deterministic
@@ -51,9 +69,10 @@ export const SEEDS = {
     rng: () => 0,
   },
 
-  // Catastrophic ending, any month: the capital falls.
+  // Catastrophic ending: the capital falls. Set in the post-war window (no scripted or
+  // pooled event competes for the month) so the endgame check fires immediately on load.
   catastrophic: {
-    current: { year: 1864, month: 1 },
+    current: { year: 1866, month: 2 },
     flags: ['washington_captured'],
   },
 };

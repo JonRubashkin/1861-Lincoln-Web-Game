@@ -89,6 +89,10 @@ describe('emancipation chain — shelve path', () => {
     expect(s.flags.emancipation_drafted).toBeUndefined();
 
     expect(eventAt({ year: 1862, month: 9 }, ['emancipation_shelved'])).toBe('antietam_1862');
-    expect(eventAt({ year: 1863, month: 1 }, ['emancipation_shelved'])).toBe(null);
+    // No proclamation fires in Jan 1863 (a random general event may fill the slot,
+    // but never the Emancipation chain).
+    const jan63 = eventAt({ year: 1863, month: 1 }, ['emancipation_shelved']);
+    expect(jan63).not.toBe('final_emancipation_1863');
+    expect(jan63).not.toBe('preliminary_emancipation_1862');
   });
 });
