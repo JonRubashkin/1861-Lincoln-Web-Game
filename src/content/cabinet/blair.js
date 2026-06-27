@@ -38,4 +38,56 @@ export default [
       },
     ],
   },
+
+  // ---- Recurring situations (random pool) ---------------------------------
+  {
+    id: 'blair_patronage',
+    advisor: 'blair',
+    kind: 'random',
+    oncePerGame: false,
+    cooldown: 6,
+    weight: 2,
+    text:
+      'Blair, master of the Post Office and its thousands of appointments, wants a free hand to place loyal border-state men in the local offices — postmasters who can hold a wavering county for the Union. The Radicals grumble that he is building a conservative machine.',
+    choices: [
+      {
+        label: 'Let Blair use the patronage to shore up the border.',
+        reason: 'Used postal patronage to hold the border counties',
+        effects: { stats: { borderStates: +6, congressionalRelations: -4 } },
+      },
+      {
+        label: 'Spread the appointments to placate the Radicals too.',
+        reason: 'Spread patronage to balance the factions',
+        effects: { stats: { congressionalRelations: +4, borderStates: -2 } },
+      },
+    ],
+  },
+
+  {
+    id: 'blair_conservative_pushback',
+    advisor: 'blair',
+    kind: 'random',
+    oncePerGame: false,
+    cooldown: 5,
+    weight: 2,
+    text:
+      'Blair speaks for the conservatives at the cabinet table, and he is blunt: the Radicals push you too fast on emancipation and the Black soldier, and every step alienates the very border men keeping the Union whole. He wants you to lean back toward the center.',
+    choices: [
+      {
+        label: 'Heed Blair and reassure the conservatives.',
+        reason: 'Tacked toward Blair’s conservatives to steady the border',
+        effects: { stats: { borderStates: +5, congressionalRelations: -6 } },
+      },
+      {
+        label: 'Side with the Radicals and tell Blair the war has moved on.',
+        reason: 'Sided with the Radicals over Blair’s conservatives',
+        effects: { stats: { congressionalRelations: +6, borderStates: -5, internationalStanding: +2 } },
+      },
+      {
+        label: 'Hold the middle and refuse to be pulled either way.',
+        reason: 'Held the middle between the factions',
+        effects: { stats: { maryPersonal: -1 } },
+      },
+    ],
+  },
 ];

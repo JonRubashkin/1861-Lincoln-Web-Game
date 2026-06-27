@@ -214,16 +214,32 @@ Seeds are plain-data state patches defined in **`tests/fixtures/seeds.js`** (sha
 the Playwright suite) and applied via the generic `SEED_GAME` action. The loader is
 gated behind `import.meta.env.DEV`, so it is stripped from production builds.
 
-Available seeds: `pre_baltimore`, `cabinet_map`, `emancipation_prelim`, `election_1864`,
-`assassination`, `catastrophic`. Example: `…/?seed=emancipation_prelim` opens directly
-on the Preliminary Emancipation Proclamation.
+Available seeds: `pre_baltimore`, `cabinet_map`, `emancipation_prelim`, `atlanta_1864`,
+`election_1864_lose`, `election_1864_win`, `assassination`, `catastrophic`. Example:
+`…/?seed=atlanta_1864` opens on the Fall of Atlanta.
 
 ## Content scope
 
-Authored content currently runs **March 1861 → mid-1863**: the March–August 1861 slice
-plus content batch 2 (the Trent Affair, Cameron→Stanton, the full Emancipation chain,
-West Virginia statehood, and supporting cabinet/Mary beats). The **complete endgame
-logic** — catastrophes, the 1864 election checkpoint, the ramping second-term
-assassination hazard, and the 1868 backstop — is implemented and unit-tested even
-though the authored timeline doesn't yet reach it. The rest of the presidency is added
-later against this locked schema, purely as content.
+Authored **scripted** content runs **March 1861 → mid-1863** (the 1861 slice plus
+batch 2: the Trent Affair, Cameron→Stanton, the full Emancipation chain, West Virginia
+statehood) and then the **June–November 1864 presidential election** arc (Greeley's
+peace mission, the Johnson VP swap, the Frémont/Blair deal, the Blind Memorandum, the
+Democratic nomination, the Fall of Atlanta, Sheridan in the Shenandoah, the soldier
+vote, and Election Day). A **random-event pool** — general wartime events plus 2–3
+recurring situations per advisor — keeps the otherwise-quiet months alive and fills the
+gap between mid-1863 and the 1864 beats. All randomness is reproducible: it draws from a
+seeded PRNG (`rngSeed`) saved with the game.
+
+The **complete endgame logic** — catastrophes, the 1864 election checkpoint (whose score
+reads the election-year flags), the ramping second-term assassination hazard, and the
+1868 backstop — is implemented and unit-tested. The remaining 1863–mid-1864 scripted
+history is added later against this locked schema, purely as content.
+
+### Adding a random (recurring) event or situation
+
+Same schema as any entry, with `kind: 'random'`, `oncePerGame: false`, a `cooldown`
+(months), and an optional `weight` (relative draw odds). Put general events in
+`events/random_pool.js` (advisor `'event'`) and advisor-specific situations in the
+relevant `cabinet/<advisor>.js`. Scripted historical beats always win their month;
+random entries only fill months with no eligible scripted event, and advisor situations
+surface occasionally under an active-advisor cap.

@@ -17,8 +17,9 @@
 
 import { createInitialState, currentMonthIndex, monthString } from './state.js';
 import { applyEffects } from './effects.js';
-import { selectMonthlyEvent } from './triggers.js';
+import { selectMonthlyEvent, selectRandomAdvisorSituations } from './triggers.js';
 import { evaluateEndgame } from './endgame.js';
+import { makeRng } from './rng.js';
 import { FLAG_ACTIVATIONS } from '../content/regions.js';
 
 function clone(state) {
@@ -77,16 +78,24 @@ function advanceMonth(state) {
   state.current = { year, month };
 }
 
-// Pick and stage this month's event, or run endgame + go to cabinet if none.
-function enterMonth(state, content, rng) {
-  const ev = selectMonthlyEvent(content, state);
+// Pick and stage this month's event, or run endgame + go to cabinet if none. All
+// random content selection draws from the seeded PRNG (state.rngSeed), advancing and
+// persisting it. `endgameRng` is the separate, injectable hazard roll (tests/seeds).
+function enterMonth(state, content, endgameRng) {
+  const gen = makeRng(state.rngSeed);
+  const draw = () => gen.next();
+
+  const ev = selectMonthlyEvent(content, state, draw);
+  state.monthRandomAdvisorIds = selectRandomAdvisorSituations(content, state, draw);
+  state.rngSeed = gen.state; // persist the advanced PRNG state
+
   if (ev) {
     state.phase = 'event';
     state.activeEventId = ev.id;
     return state;
   }
   // No event this month — endgame still evaluates, then cabinet phase.
-  applyEndgame(state, rng);
+  applyEndgame(state, endgameRng);
   if (state.phase !== 'epilogue') {
     state.phase = 'cabinet';
     state.activeEventId = null;
@@ -110,7 +119,8 @@ function applyEndgame(state, rng) {
 export function gameReducer(state, action, content = []) {
   switch (action.type) {
     case 'NEW_GAME': {
-      const s = createInitialState();
+      // action.seed pins the PRNG (tests/reproducible runs); omitted -> random seed.
+      const s = createInitialState(action.seed != null ? action.seed >>> 0 : undefined);
       s.pendingFollowUps = [];
       // Fire the opening (March 1861) event before the first cabinet phase.
       return enterMonth(s, content, action.rng);
@@ -119,6 +129,9 @@ export function gameReducer(state, action, content = []) {
     case 'LOAD_GAME': {
       const s = clone(action.state);
       if (!s.pendingFollowUps) s.pendingFollowUps = [];
+      // Backward-compat for saves written before these fields existed.
+      if (s.rngSeed == null) s.rngSeed = createInitialState().rngSeed;
+      if (!Array.isArray(s.monthRandomAdvisorIds)) s.monthRandomAdvisorIds = [];
       return s;
     }
 
@@ -138,6 +151,7 @@ export function gameReducer(state, action, content = []) {
         }
       }
       if (p.secondTermStart != null) s.secondTermStart = p.secondTermStart;
+      if (p.rngSeed != null) s.rngSeed = p.rngSeed >>> 0 || 1;
       reconcileStructural(s);
       return enterMonth(s, content, action.rng);
     }

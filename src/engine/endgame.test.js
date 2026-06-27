@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createInitialState } from './state.js';
 import {
   electionScore,
+  electionFlagBonus,
   evaluateEndgame,
   assassinationChance,
   ELECTION_THRESHOLD,
@@ -28,6 +29,37 @@ describe('1864 election checkpoint', () => {
     win.stats.congressionalRelations = 70;
     expect(electionScore(win)).toBeGreaterThanOrEqual(ELECTION_THRESHOLD);
     expect(evaluateEndgame(win, () => 0.99)).toEqual({ secondTermBegins: true });
+  });
+});
+
+describe('1864 election flag modifiers', () => {
+  it('atlanta_fallen raises the score; entertaining peace talks lowers it', () => {
+    const base = at(1864, 11);
+    const atlanta = at(1864, 11);
+    atlanta.flags.atlanta_fallen = true;
+    const peace = at(1864, 11);
+    peace.flags.peace_talks_entertained = true;
+    expect(electionScore(atlanta)).toBeGreaterThan(electionScore(base));
+    expect(electionScore(peace)).toBeLessThan(electionScore(base));
+  });
+
+  it('the modifiers are additive and documented (Atlanta = +12)', () => {
+    const s = at(1864, 11);
+    expect(electionFlagBonus(s)).toBe(0);
+    s.flags.atlanta_fallen = true;
+    expect(electionFlagBonus(s)).toBe(12);
+    s.flags.soldier_vote_enabled = true;
+    expect(electionFlagBonus(s)).toBe(18);
+  });
+
+  it('Atlanta can flip a marginal race from a loss to a win', () => {
+    const s = at(1864, 11);
+    s.stats.unionMorale = 46;
+    s.stats.warEffort = 44;
+    s.stats.congressionalRelations = 44;
+    expect(electionScore(s)).toBeLessThan(ELECTION_THRESHOLD); // would lose
+    s.flags.atlanta_fallen = true;
+    expect(electionScore(s)).toBeGreaterThanOrEqual(ELECTION_THRESHOLD); // now wins
   });
 });
 

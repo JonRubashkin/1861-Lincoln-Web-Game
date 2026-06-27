@@ -61,4 +61,80 @@ export default [
       },
     ],
   },
+
+  // ---- Recurring situations (random pool) ---------------------------------
+  {
+    id: 'seward_maximilian',
+    advisor: 'seward',
+    kind: 'random',
+    oncePerGame: false,
+    cooldown: 8,
+    weight: 2,
+    triggers: { earliestMonth: '1862-06' },
+    text:
+      'Seward brings troubling news from Mexico: France has installed the Archduke Maximilian as a puppet emperor, in open defiance of the Monroe Doctrine, while you are too consumed by the rebellion to answer it. He counsels patience — one war at a time — but the Radicals want Napoleon III warned off the continent now.',
+    choices: [
+      {
+        label: 'Swallow it for now — protest on paper, fight one war at a time.',
+        reason: 'Deferred the Mexican question to focus on the rebellion',
+        effects: { stats: { internationalStanding: +4, congressionalRelations: -4 } },
+      },
+      {
+        label: 'Warn France sharply that the Republic will not abide a throne on its border.',
+        reason: 'Warned France off its Mexican adventure',
+        effects: { stats: { internationalStanding: -6, unionMorale: +5, congressionalRelations: +4 } },
+      },
+    ],
+  },
+
+  {
+    id: 'seward_laird_rams',
+    advisor: 'seward',
+    kind: 'random',
+    oncePerGame: false,
+    cooldown: 8,
+    weight: 2,
+    triggers: { earliestMonth: '1863-01' },
+    text:
+      'British yards are building ironclad "rams" plainly bound for the Confederacy — vessels that could shatter the wooden blockade. Seward has a dispatch drafted to Minister Adams in London. Its sharpest line reads, "It would be superfluous in me to point out to your Lordship that this is war."',
+    choices: [
+      {
+        label: 'Send the warning as written — make the threat unmistakable.',
+        reason: 'Threatened Britain to stop the Laird rams ("this is war")',
+        effects: {
+          stats: { internationalStanding: -4, warEffort: +4, unionMorale: +3 },
+          flags: { set: ['britain_tension_high'] },
+        },
+      },
+      {
+        label: 'Soften it to lawyerly protest and trust London to detain the ships.',
+        reason: 'Trusted quiet diplomacy to detain the Laird rams',
+        effects: { stats: { internationalStanding: +6, warEffort: -2 } },
+      },
+    ],
+  },
+
+  {
+    id: 'seward_commerce_raiders',
+    advisor: 'seward',
+    kind: 'random',
+    oncePerGame: false,
+    cooldown: 6,
+    weight: 2,
+    triggers: { earliestMonth: '1862-08', conditions: [{ target: 'flag:war_begun', op: 'isSet' }] },
+    text:
+      'British-built Confederate cruisers — the Alabama foremost among them — are burning Northern merchantmen across the oceans and driving up insurance rates at every port. Shipowners howl. Seward wants to lodge the damage claims against Britain for the day of reckoning.',
+    choices: [
+      {
+        label: 'Press the claims hard now and rattle London.',
+        reason: 'Pressed Britain on the commerce-raider claims',
+        effects: { stats: { internationalStanding: -3, unionMorale: +3, treasury: -2 } },
+      },
+      {
+        label: 'Catalog the damages quietly and save the reckoning for after the war.',
+        reason: 'Banked the raider claims for a postwar reckoning',
+        effects: { stats: { internationalStanding: +4, treasury: -1 } },
+      },
+    ],
+  },
 ];

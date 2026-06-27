@@ -30,16 +30,53 @@ export function mapControlPercent(state) {
 
 export const ELECTION_THRESHOLD = 50;
 
+// 1864 flag modifiers — the single, documented place where the player's election-year
+// choices move the result on top of the dial/map blend. Positive = helps re-election.
+// These read flags the 1864 content sets (events/1864.js); the engine never switches on
+// a specific flag elsewhere. Tune balance here, not in logic.
+export const ELECTION_FLAG_MODIFIERS = {
+  atlanta_fallen: +12, // Sherman takes Atlanta — the historical turning point
+  soldier_vote_enabled: +6, // furloughed/absentee soldiers favored Lincoln heavily
+  sheridan_shenandoah: +5, // Cedar Creek and the autumn good news
+  fremont_withdrew: +5, // the Radical splinter healed, the vote not divided
+  johnson_vp: +4, // the broadened "National Union" ticket
+  peace_terms_firm: +3, // "To Whom It May Concern" steadied the war party
+  blind_memo: +2, // resolve to govern to the end, modestly steadying
+  blair_dropped: -2, // appeasing the Radicals cost some conservative goodwill
+  peace_talks_entertained: -8, // entertaining peace feelers read as wavering
+};
+
+export function electionFlagBonus(state) {
+  let bonus = 0;
+  for (const [flag, mod] of Object.entries(ELECTION_FLAG_MODIFIERS)) {
+    if (state.flags[flag]) bonus += mod;
+  }
+  return bonus;
+}
+
 export function electionScore(state) {
   const s = state.stats;
   const map = mapControlPercent(state);
-  // unionMorale dominant, then warEffort, congress, and the map ratio.
+  // unionMorale dominant, then warEffort, congress, the map ratio, plus the
+  // documented 1864 flag modifiers.
   return (
     0.45 * s.unionMorale +
     0.2 * s.warEffort +
     0.15 * s.congressionalRelations +
-    0.2 * map
+    0.2 * map +
+    electionFlagBonus(state)
   );
+}
+
+// Plain-language note on what swung (or failed to swing) the 1864 race, for epilogues.
+function describeElection(state) {
+  if (state.flags.atlanta_fallen)
+    return 'The fall of Atlanta in September had reignited the North and turned the canvass.';
+  if (state.flags.peace_talks_entertained)
+    return 'Entertaining the peace feelers had let the war party paint you as wavering.';
+  if (state.flags.fremont_withdrew)
+    return 'The Radical splinter had been healed, the Union vote kept whole.';
+  return 'The contest turned on the weary arithmetic of the war itself.';
 }
 
 // ---- Assassination hazard ----------------------------------------------------
@@ -103,6 +140,7 @@ function fullPresidencyEpilogue(state, { died }) {
     died
       ? 'An assassin’s bullet found the President. The nation wept — but the work was already wrought.'
       : 'The President served out his terms and stepped down with the Republic intact.',
+    `Re-elected in 1864: ${describeElection(state)}`,
     describeWar(state),
     describeSlavery(state),
     state.flags.reconstruction_begun
@@ -120,6 +158,7 @@ function curtailedTermEpilogue(state) {
     title: 'Turned Out of Office',
     body: [
       'The voters of 1864 rendered their verdict, and it was not for you. A single term, and then the door.',
+      describeElection(state),
       describeWar(state),
       describeSlavery(state),
       `You leave with the war effort at ${Math.round(state.stats.warEffort)} and the home front at ${Math.round(state.stats.unionMorale)}.`,
