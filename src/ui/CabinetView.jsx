@@ -14,6 +14,8 @@ function Portrait({ person, active, required, onClick }) {
   return (
     <button
       type="button"
+      data-testid={'portrait-' + person.id}
+      data-active={active ? 'true' : 'false'}
       className={'portrait' + (active ? ' active' : ' inactive') + (required ? ' required' : '')}
       disabled={!active}
       onClick={active ? onClick : undefined}

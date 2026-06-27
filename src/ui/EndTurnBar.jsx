@@ -17,7 +17,7 @@ export default function EndTurnBar({ state, requiredRemaining, onEndTurn }) {
   return (
     <div className="endturn-bar">
       <div className="endturn-status">
-        <div className="endturn-month">
+        <div className="endturn-month" data-testid="month">
           {MONTH_NAMES[state.current.month]} {state.current.year}
         </div>
         {shifts.length > 0 ? (
@@ -36,7 +36,7 @@ export default function EndTurnBar({ state, requiredRemaining, onEndTurn }) {
         {!canEnd && (
           <span className="endturn-warn">{requiredRemaining} decision(s) must be answered first.</span>
         )}
-        <button type="button" className="end-turn" disabled={!canEnd} onClick={onEndTurn}>
+        <button type="button" className="end-turn" data-testid="end-turn" disabled={!canEnd} onClick={onEndTurn}>
           End Turn ▸
         </button>
       </div>

@@ -23,6 +23,8 @@ export default function MapView({ regions, selectedId, onSelect }) {
             <path
               key={id}
               d={geo.path}
+              data-testid={'region-' + id}
+              data-band={dormant ? 'dormant' : bandOf(region.control)}
               className={
                 'region' +
                 (region.isTerritory ? ' territory' : '') +
