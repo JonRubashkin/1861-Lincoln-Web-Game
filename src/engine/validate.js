@@ -37,6 +37,14 @@ export function validateContent(content, { advisorIds, regionIds }) {
 
     if (typeof entry.text !== 'string' || !entry.text) warn(`${where}: missing text.`);
 
+    // Random-event fields (optional, backward compatible).
+    if (entry.kind !== undefined && entry.kind !== 'scripted' && entry.kind !== 'random')
+      warn(`${where}: kind "${entry.kind}" must be "scripted" or "random".`);
+    if (entry.weight !== undefined && (typeof entry.weight !== 'number' || entry.weight <= 0))
+      warn(`${where}: weight must be a positive number.`);
+    if (entry.kind === 'random' && entry.oncePerGame !== false && !entry.cooldown)
+      warn(`${where}: random entry is oncePerGame with no cooldown — it can fire only once.`);
+
     // Triggers
     const t = entry.triggers || {};
     const monthRe = /^\d{4}-\d{2}$/;
