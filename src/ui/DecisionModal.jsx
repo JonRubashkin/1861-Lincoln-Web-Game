@@ -11,12 +11,12 @@ export default function DecisionModal({ entry, isEvent, onChoose, onClose }) {
 
   return (
     <div className="modal-backdrop" onClick={isEvent ? undefined : onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} data-testid={isEvent ? 'event-modal' : 'decision-modal'} data-entry={entry.id}>
         <div className="modal-speaker">{speaker}{person && !isEvent ? ` · ${person.title}` : ''}</div>
         <p className="modal-text">{entry.text}</p>
         <div className="modal-choices">
           {entry.choices.map((c, i) => (
-            <button key={i} type="button" className="choice" onClick={() => onChoose(i)}>
+            <button key={i} type="button" className="choice" data-testid={'choice-' + i} onClick={() => onChoose(i)}>
               {c.label}
             </button>
           ))}

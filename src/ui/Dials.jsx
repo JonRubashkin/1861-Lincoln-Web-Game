@@ -14,12 +14,12 @@ function Dial({ statKey, value }) {
   const meta = STAT_META[statKey];
   const hue = value >= 60 ? 'good' : value >= 35 ? 'mid' : 'bad';
   return (
-    <div className="dial" title={meta.hint}>
+    <div className="dial" title={meta.hint} data-testid={'dial-' + statKey}>
       <div className="dial-label">{meta.label}</div>
       <div className="dial-bar">
         <div className={'dial-fill ' + hue} style={{ width: value + '%' }} />
       </div>
-      <div className="dial-value">{Math.round(value)}</div>
+      <div className="dial-value" data-testid={'dial-value-' + statKey}>{Math.round(value)}</div>
     </div>
   );
 }

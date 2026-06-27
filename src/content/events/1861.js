@@ -108,4 +108,72 @@ export default [
       },
     ],
   },
+
+  // ---- Content batch 2 (Sept–Dec 1861) ------------------------------------
+  {
+    id: 'fremont_emancipation_1861',
+    advisor: 'event',
+    triggers: { earliestMonth: '1861-09', latestMonth: '1861-10' },
+    oncePerGame: true,
+    priority: 20,
+    text:
+      "General Frémont, commanding in Missouri, has issued his own proclamation freeing the slaves of Confederate sympathizers — without your authorization. The Radicals are jubilant. Kentucky's legislature is alarmed, and you've heard a Union officer there warn that the order could lose you the whole border at a stroke.",
+    choices: [
+      {
+        label: 'Revoke the order — you cannot risk Kentucky.',
+        reason: 'Overruled Frémont to keep the border states in the Union',
+        effects: {
+          stats: { borderStates: +12, congressionalRelations: -10, unionMorale: -4 },
+          regions: { kentucky: +8, missouri: +5 },
+        },
+      },
+      {
+        label: 'Let it stand — strike at slavery where you can.',
+        reason: "Upheld Frémont's emancipation order",
+        effects: {
+          stats: { congressionalRelations: +12, internationalStanding: +5, borderStates: -15, unionMorale: +3 },
+          regions: { kentucky: -15, missouri: +8 },
+          flags: { set: ['early_emancipation_signal'] },
+        },
+      },
+      {
+        label: 'Narrow it to match the Confiscation Act already on the books.',
+        reason: "Narrowed Frémont's order to existing confiscation law",
+        effects: {
+          stats: { borderStates: +5, congressionalRelations: -2, unionMorale: +1 },
+          regions: { kentucky: +2, missouri: +3 },
+        },
+      },
+    ],
+  },
+
+  {
+    id: 'seward_trent_affair',
+    advisor: 'seward',
+    triggers: { earliestMonth: '1861-11', latestMonth: '1862-01' },
+    oncePerGame: true,
+    priority: 25,
+    text:
+      'Captain Wilkes has seized two Confederate envoys, Mason and Slidell, from the British mail steamer Trent. The public is cheering him as a hero. London is incandescent — there is open talk of war, and troops are sailing for Canada. Seward, who once spoke loosely of war with Europe, now urges caution and awaits your decision.',
+    choices: [
+      {
+        label: 'Release the envoys; send a face-saving note to London.',
+        reason: 'Released the envoys to avoid war with Britain',
+        effects: { stats: { internationalStanding: +22, unionMorale: -12, congressionalRelations: -3 } },
+      },
+      {
+        label: 'Hold them — they are traitors, not diplomats.',
+        reason: 'Held the envoys despite British fury',
+        effects: {
+          stats: { internationalStanding: -28, unionMorale: +10 },
+          flags: { set: ['britain_tension_high'] },
+        },
+      },
+      {
+        label: 'Release them quietly in exchange for British assurances of neutrality.',
+        reason: "Traded the envoys' release for British neutrality assurances",
+        effects: { stats: { internationalStanding: +14, unionMorale: -4, congressionalRelations: +2 } },
+      },
+    ],
+  },
 ];

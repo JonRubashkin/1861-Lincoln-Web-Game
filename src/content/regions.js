@@ -69,6 +69,18 @@ const DEFS = [
   { id: 'indian_territory', displayName: 'Indian Terr.', control: -20, isTerritory: true },
 ];
 
+// Data-driven "flag activates region" hook (CLAUDE.md §10). When one of these flags
+// becomes set, the engine flips the named region to active and seeds its control once.
+// This keeps statehood/territory promotions out of the engine as a special case —
+// future beats add a row here, not engine code. The SVG geometry never changes.
+export const FLAG_ACTIVATIONS = {
+  west_virginia_active: {
+    region: 'west_virginia',
+    control: 40,
+    reason: 'West Virginia split from Virginia and joined the Union',
+  },
+};
+
 // Build a fresh { [id]: region } map with all defaults filled in.
 export function createRegions() {
   const out = {};

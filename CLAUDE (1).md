@@ -69,7 +69,20 @@ Keep `npm run test` and `npm run test:e2e` green before committing. CI should ru
 
 ### Flags
 
-String set for unlocks and non-repeating story state (`security_unlocked`, `west_virginia_active`, `stanton_replaces_cameron`, `emancipation_drafted`, `emancipation_issued`, `antietam_victory`, `washington_captured`, `foreign_intervention`, …).
+String set for unlocks and non-repeating story state. New flags **must** be documented here. Current flags:
+
+**Engine-significant (read by `endgame.js` / structural hooks):**
+- `security_unlocked` — reveals the Security dial (Baltimore Plot).
+- `west_virginia_active` — drives the data-driven `FLAG_ACTIVATIONS` hook (activates the `west_virginia` region at +40). See §10.
+- `washington_captured`, `foreign_intervention` — catastrophic endings (any month).
+- `union_victory`, `confederacy_recognized` — colour the epilogue war summary.
+- `victory_celebration` — thematic spike multiplier on the assassination hazard.
+- `reconstruction_begun` — epilogue flavour.
+
+**Story / content-gating (set and read by content only — engine never switches on them):**
+- Emancipation chain: `emancipation_drafted`, `antietam_victory` (sticky window flag, §10), `emancipation_issued`, `emancipation_shelved`, `emancipation_final`, `black_troops_authorized`, `early_emancipation_signal`, `dc_emancipation`, `border_compensation_offered`.
+- War / cabinet: `war_begun`, `blockade_declared`, `stanton_replaces_cameron`, `greenbacks_issued`, `ironclad_program`, `habeas_suspended`, `dissent_suppressed`.
+- Diplomacy: `britain_tension_high`.
 
 ### Change log
 
@@ -147,7 +160,9 @@ Maintain these scenarios:
 7. **Endgame paths** → 1864 election checkpoint triggers; second-term assassination hazard can fire; catastrophic loss can fire.
 
 ### Debug seeding (IMPORTANT for testable e2e)
-Playing 40 turns to reach 1864 in every test is untenable. Add a **dev-only scenario-seed mechanism** — e.g. a `?seed=` URL param or a debug panel (excluded from production builds) that sets calendar, stats, regions, and flags directly. Endgame e2e tests use this to jump to the relevant month/state. Keep seeds in a `tests/fixtures/` file so scenarios are reproducible.
+Playing 40 turns to reach 1864 in every test is untenable. A **dev-only scenario-seed mechanism** is implemented: a `?seed=<name>` URL param (handled in `src/App.jsx` via `src/debug/seed.js`, both gated behind `import.meta.env.DEV` so they are tree-shaken from production builds) dispatches the generic `SEED_GAME` reducer action with a plain-data patch (`current`, `stats`, `regions`, `flags`, `secondTermStart`, optional deterministic `rng`). The seeds themselves live in **`tests/fixtures/seeds.js`**, shared by the dev loader and the Playwright suite so a scenario is defined once.
+
+The e2e suite (`tests/e2e/`, run with `npm run test:e2e`) runs against the Vite **dev** server because seeds are dev-only. It covers all seven scenarios above plus the seeded preliminary-Emancipation fixture (`?seed=emancipation_prelim`). The `SEED_GAME` action is generic state-patching — it carries no content-specific logic.
 
 ## 12. Content authoring rules
 
@@ -160,6 +175,7 @@ Playing 40 turns to reach 1864 in every test is untenable. Add a **dev-only scen
 
 ## 13. Current status / roadmap
 
-- **MVP slice:** engine + map + full endgame logic + content for Mar–Aug 1861.
-- **Content batch 2:** Sept 1861 → mid-1863 (Trent Affair, Cameron→Stanton, the Emancipation chain, West Virginia statehood, supporting cabinet/Mary beats). See the batch-2 content doc; merge into `events/1861.js`, new `events/1862.js`, new `events/1863.js`.
+- **MVP slice:** engine + map + full endgame logic + content for Mar–Aug 1861. ✅ Done.
+- **Content batch 2:** Sept 1861 → mid-1863 (Trent Affair, Cameron→Stanton, the Emancipation chain, West Virginia statehood, supporting cabinet/Mary beats). ✅ **Integrated** — appended to `events/1861.js`, plus new `events/1862.js` and `events/1863.js`, all wired through `content/index.js`. The WV statehood beat drives the data-driven `FLAG_ACTIVATIONS` hook.
+- **Tooling:** ESLint flat config (`npm run lint`), Vitest unit suite, Playwright e2e (`npm run test:e2e`), `?seed=` debug seeding, GitHub Pages deploy (`deploy.yml`) and CI (`ci.yml`, runs lint + unit + build + e2e).
 - **Out of scope for now:** the `activeFighting` region overlay; content past mid-1863; final portrait art (stylized map is real, portraits are placeholders).

@@ -9,6 +9,7 @@ import Dials from './ui/Dials.jsx';
 import DecisionModal from './ui/DecisionModal.jsx';
 import EndTurnBar from './ui/EndTurnBar.jsx';
 import Epilogue from './ui/Epilogue.jsx';
+import { seedActionFromUrl } from './debug/seed.js';
 
 const SAVE_KEY = 'lincoln-presidency-save-v1';
 
@@ -17,20 +18,33 @@ function reducer(state, action) {
 }
 
 function startState() {
+  // Dev/test only: a `?seed=` URL param jumps to a reproducible scenario. The branch
+  // (and the debug module) is stripped from production builds.
+  if (import.meta.env.DEV) {
+    const seedAction = seedActionFromUrl();
+    if (seedAction) return gameReducer(null, seedAction, content);
+  }
+  // Resume a saved game on reload if one exists; otherwise start fresh.
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) return gameReducer(null, { type: 'LOAD_GAME', state: JSON.parse(raw) }, content);
+  } catch {
+    /* corrupt or unavailable storage — fall through to a new game */
+  }
   return gameReducer(null, { type: 'NEW_GAME' }, content);
 }
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, undefined, startState);
   const [selectedId, setSelectedId] = useState(null);
-  const [hasSave, setHasSave] = useState(() => !!localStorage.getItem(SAVE_KEY));
 
-  // Auto-save every state change (except the transient epilogue is fine to save too).
+  // Auto-save every state change so a reload resumes where the player left off
+  // (startState() loads this on next mount). Writing to an external system from an
+  // effect is exactly what effects are for; no React state is touched here.
   useEffect(() => {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-      setHasSave(true);
-    } catch (e) {
+    } catch {
       // Storage may be unavailable (private mode); ignore.
     }
   }, [state]);
@@ -60,8 +74,7 @@ export default function App() {
   const save = useCallback(() => {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-      setHasSave(true);
-    } catch (e) {
+    } catch {
       /* ignore */
     }
   }, [state]);
@@ -72,7 +85,7 @@ export default function App() {
     try {
       dispatch({ type: 'LOAD_GAME', state: JSON.parse(raw) });
       setSelectedId(null);
-    } catch (e) {
+    } catch {
       /* ignore corrupt save */
     }
   }, []);
@@ -94,7 +107,7 @@ export default function App() {
         </div>
         <div className="topbar-actions">
           <button type="button" onClick={save}>Save</button>
-          <button type="button" onClick={load} disabled={!hasSave}>Load</button>
+          <button type="button" onClick={load}>Load</button>
           <button type="button" onClick={newGame}>New Game</button>
         </div>
       </header>

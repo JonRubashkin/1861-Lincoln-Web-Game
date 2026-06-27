@@ -15,6 +15,8 @@ import blair from './cabinet/blair.js';
 import mary from './cabinet/mary.js';
 
 import events1861 from './events/1861.js';
+import events1862 from './events/1862.js';
+import events1863 from './events/1863.js';
 import thresholds from './events/thresholds.js';
 
 // Cabinet roster — drives the portrait gallery. `id` must match the advisor id used
@@ -43,6 +45,8 @@ export const content = [
   ...blair,
   ...mary,
   ...events1861,
+  ...events1862,
+  ...events1863,
   ...thresholds,
 ];
 
