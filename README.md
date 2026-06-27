@@ -20,8 +20,15 @@ npm install
 npm run dev       # local dev server
 npm run build     # production build to dist/
 npm run preview   # preview the production build
-npm test          # run the engine unit tests (Vitest)
+npm run lint      # ESLint
+npm test          # engine + content unit tests (Vitest)
+npm run test:e2e  # end-to-end tests (Playwright, runs against the dev server)
 ```
+
+> **Playwright browsers:** the first e2e run downloads a Chromium build
+> (`npx playwright install chromium`). CI does this automatically. In sandboxes
+> that ship a pre-installed Chromium at `/opt/pw-browsers/chromium`, the config
+> uses it directly — no download needed.
 
 ### GitHub Pages
 
@@ -52,7 +59,9 @@ src/engine/
 src/content/
   regions.js          regions + starting control values
   cabinet/*.js        one module per advisor
-  events/1861.js      calendar-anchored events
+  events/1861.js      calendar-anchored events (1861)
+  events/1862.js      calendar-anchored events (1862) — incl. the Emancipation chain
+  events/1863.js      calendar-anchored events (1863) — final Proclamation, WV statehood
   events/thresholds.js state-triggered (non-calendar) events
   index.js            aggregates all content + the Cabinet roster, runs validation
 src/ui/               React components (Cabinet, Map, InfoPanel, Dials, modal, epilogue)
@@ -197,9 +206,24 @@ change: set `portrait` to an image URL; otherwise a labeled placeholder is gener
 
 ---
 
+## Debug seeding (dev only)
+
+Reaching 1864 by hand for every test is untenable, so a dev-only seed mechanism jumps
+straight to a scenario: append `?seed=<name>` to the URL while running `npm run dev`.
+Seeds are plain-data state patches defined in **`tests/fixtures/seeds.js`** (shared with
+the Playwright suite) and applied via the generic `SEED_GAME` action. The loader is
+gated behind `import.meta.env.DEV`, so it is stripped from production builds.
+
+Available seeds: `pre_baltimore`, `cabinet_map`, `emancipation_prelim`, `election_1864`,
+`assassination`, `catastrophic`. Example: `…/?seed=emancipation_prelim` opens directly
+on the Preliminary Emancipation Proclamation.
+
 ## Content scope
 
-This build ships a **vertical slice: March–August 1861**, proving the full engine and
-every system end to end (the complete endgame logic is implemented even though the
-slice doesn't reach 1864). The full presidency is authored later against this locked
-schema — purely by adding content.
+Authored content currently runs **March 1861 → mid-1863**: the March–August 1861 slice
+plus content batch 2 (the Trent Affair, Cameron→Stanton, the full Emancipation chain,
+West Virginia statehood, and supporting cabinet/Mary beats). The **complete endgame
+logic** — catastrophes, the 1864 election checkpoint, the ramping second-term
+assassination hazard, and the 1868 backstop — is implemented and unit-tested even
+though the authored timeline doesn't yet reach it. The rest of the presidency is added
+later against this locked schema, purely as content.
